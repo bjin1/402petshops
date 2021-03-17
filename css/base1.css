@@ -1,0 +1,142 @@
+
+.font{
+    font-family: 'Black Han Sans', sans-serif;
+}
+
+.base {
+    font-size: 26px;
+    text-align: center;
+}
+
+.baselist{
+    margin-top:40px;
+    display: flex;
+    flex-wrap: wrap;
+    align-content: space-between;
+}
+
+/*.baseimage1{*/
+    /*width: 250px;*/
+/*}*/
+
+/*.baseimage2{*/
+    /*width: 380px;*/
+/*}*/
+
+/*.baseimage3{*/
+    /*width: 220px;*/
+/*}*/
+
+.baselist .item{
+    text-align: center;
+    flex-basis: 300px;
+    /*margin-right: 15px;*/
+    /*margin-left: 15px;*/
+    margin-bottom: 1%;
+}
+.baselist .item img{
+    border-radius: 5px;
+    height: 200px;
+    width: 200px;
+    cursor: pointer;
+    color: grey;
+}
+.clearr::after{
+    content: "";
+    clear: both;
+    display: block;
+}
+/*两盒子*/
+.tbox{
+    margin: 0 auto;
+    width: 1200px;
+}
+.boxcom{
+    padding: 1%;
+    border: 1px solid grey;
+    border-radius: 10px;
+    width: 500px;
+    margin-bottom: 1%;
+}
+.leftbox{
+    float: left;
+}
+.rightbox{
+    float: right;
+}
+.foo{
+    height: 50px;
+    background: #3c763d;
+}
+/*轮播图*/
+.main-content{
+    width: 1200px;
+    overflow: hidden;
+    margin: 1% auto;
+
+}
+.banner{
+    width: 100%;
+    height: 500px;
+    position: relative;
+    overflow: hidden;
+}
+.banner  .banner-ul{
+    /*width: 4400px;*/
+    height: 400px;
+    overflow: hidden;
+    position: absolute;
+}
+.banner  .banner-ul li{
+    float: left;
+    width: 1200px;
+    height: 400px;
+}
+.banner  .banner-ul li img{
+    width: 1200px;
+    height: 400px;
+}
+.banner  .arrow {
+    position: absolute;
+    font-family: Helvetica Neue, Helvetica, Arial, sans-serif;
+    font-size: 70px;
+    color: white;
+    cursor: pointer;
+    top: 50%;
+    transform: translateY(-50%);
+    display: none;
+}
+.banner  .arrow:hover{
+    color: blue;
+}
+.banner  .arrow-left{
+    left: 20px;
+}
+.banner  .arrow-right{
+    right: 20px;
+}
+.banner  .page-control-group{
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 20px;
+}
+.banner  .page-control-group .page-control{
+    margin: 0 auto;
+    overflow: hidden;
+}
+.banner  .page-control-group .page-control li{
+    margin: 0 8px;
+    width: 13px;
+    height: 13px;
+    border: 1px solid white;
+    float: left;
+    border-radius: 50%;
+    box-sizing: border-box;
+    cursor: pointer;
+}
+.banner  .page-control-group .page-control li.active{
+    background-color: white;
+}
+
+
