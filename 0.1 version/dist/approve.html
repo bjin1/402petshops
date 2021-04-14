@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>PetShops</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <link href="./css/bootstrap.min.css" rel="stylesheet">
+    <link href="./css/global.css" rel="stylesheet">
+    <script src="./js/jquery.min.js"></script>
+    <script src="./js/bootstrap.min.js"></script>
+    <script src="./js/layer.js"></script>
+    <script src="./js/vue.min.js"></script>
+    <script src="./js/vue-resource.min.js"></script>
+    <script src="./js/config.js"></script>
+    <style>
+        .carousel .item {
+            height: 450px;
+            background-color: #777;
+        }
+
+        .carousel-inner > .item > img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            min-width: 100%;
+            height: 450px;
+        }
+
+        .table {
+            margin-bottom: 0px;
+        }
+    </style>
+</head>
+<body>
+<div class="container" id="app">
+    <div class="row background-wall">
+        <div class="row header">
+            <div class="col-md-12 login-button">
+                <a href="./login.html" v-show="!isLogin">
+                    <button type="button" class="btn btn-success">Login</button>
+                </a>
+                <a href="./register.html" v-show="!isLogin">
+                    <button type="button" class="btn btn-success">Register</button>
+                </a>
+                <a v-show="isLogin" style="color:black;">Welcome,{{ user.name }}</a>
+                <a v-show="isLogin" @click="logout">Logout</a>
+            </div>
+        </div>
+        <div class="row nav-center"></div>
+    </div>
+
+    <div class="row nav-bottom">
+        <div class="col-md-6 logo-title">
+            <a href="./index.html"><img src="./images/logo.jpg?v=1" width="100" height="100"></a>
+            <a href="./index.html"><h1 class="LogoFont">PetShops</h1></a>
+        </div>
+        <div class="col-md-6 navbar-right">
+            <ul class="nav navbar-nav">
+                <li class="active"><a href="./index.html">Home</a></li>
+                <li><a href="./approve.html">Approve</a></li>
+                <li><a href="./mine.html">Mine</a></li>
+                <li><a @click="chatRoom">Message</a></li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12" id="checkout" style="background-color: white;padding-bottom: 100px;">
+            <div class="box" style="padding-bottom: 50px">
+                <form id="addressForm">
+                    <h1>Approve</h1>
+                    <p>Content cannot be published until the CA verification certificate is uploaded</p>
+                    <br>
+                    <div class="content" id="detailDiv">
+                        <div class="row">
+                            <div class="col-sm-3">
+                                <div class="form-group">
+                                    <label for="album">CA</label>
+                                    <input type="file" id="album" name="album" @change="upload($event)" multiple="multiple">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="box-footer">
+                        <div class="pull-left" style="margin-left: 15px;">
+                            <button type="button" class="btn btn-primary" @click="submit">Submit<i
+                                    class="fa fa-chevron-right"></i></button>
+                            <a @click="cancel" class="btn btn-default"><i class="fa fa-chevron-left"></i>Cancel</a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    new Vue({
+        el: '#app',
+        data: {
+            id: '',
+            user: {},
+            data: {},
+            order: {},
+            isLogin: false,
+            cafile: '',
+            token: '',
+        },
+        mounted() {
+            this.init();
+        },
+        methods: {
+            init: function () {
+                let user = session("get.user");
+                if (user) {
+                    this.isLogin = true;
+                    this.user = JSON.parse(user);
+                    this.token = this.user.token;
+                } else {
+                    this.isLogin = false;
+                    this.logout();
+                }
+                this.id = get_url_param("id");
+                this.amount = get_url_param("amount");
+            },
+            logout: function () {
+                this.isLogin = false;
+                window.sessionStorage.clear();
+                window.location.href = './login.html'
+            },
+            submit: function () {
+                let data = {};
+                let _this = this;
+                data.cafile = this.cafile;
+                data.id = this.user.id;
+                this.$http.post(BASE_URL + '/api/cert.php', data, {emulateJSON: true}).
+                then(function (res) {
+                    console.log(res.body);
+                    layer.alert(res.body.msg);
+                    _this.user.certfile = data.cafile;
+                    session("post.user",JSON.stringify(_this.user));
+                }, function (res) {
+                    console.log(res)
+                });
+                return true;
+            },
+            cancel: function () {
+                window.history.go(-1);
+            },
+            //upload image
+            upload:function(event){
+                let _this = this;
+                this.file = event.target.files[0];
+                let param = new FormData();
+                param.append('file', this.file);
+                this.$http.post(BASE_URL + '/api/upload.php',param)
+                    .then(function(res){
+                        console.log(res);
+                        if(res.body.code === 1){
+                            layer.alert(res.body.msg);
+                        }else{
+                            _this.cafile = res.body.data
+                        }
+                    }).catch(function(error){
+                    console.log(error);
+                });
+            },
+            chatRoom: function () {
+                layer.open({
+                    type: 2
+                    , title: 'Chat'
+                    , id: 'LAY_showPraise'
+                    , shade: 0.8
+                    , shadeClose: true
+                    , area: ['75%', "100%"]
+                    , skin: 'layer-ext-case'
+                    , maxmin: true
+                    , content: './chat.html?id=' + this.user.id
+                    , cancel: function (res) {
+                        console.log(res)
+                    }
+                })
+            }
+        }
+    })
+</script>
+</body>
+</html>

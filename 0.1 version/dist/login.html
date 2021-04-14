@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Home</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <link href="./css/bootstrap.min.css" rel="stylesheet">
+    <link href="./css/global.css" rel="stylesheet">
+    <script src="./js/jquery.min.js"></script>
+    <script src="./js/bootstrap.min.js"></script>
+    <script src="./js/layer.js"></script>
+    <script src="./js/vue.min.js"></script>
+    <script src="./js/vue-resource.min.js"></script>
+    <script src="./js/config.js"></script>
+</head>
+<body>
+<div class="container" id="app">
+    <div class="row background-wall">
+        <div class="row header">
+            <div class="col-md-12 login-button">
+                <a href="./login.html">
+                    <button type="button" class="btn btn-success">Login</button>
+                </a>
+                <a href="./register.html">
+                    <button type="button" class="btn btn-success">Register</button>
+                </a>
+            </div>
+        </div>
+        <div class="row nav-center"></div>
+    </div>
+
+    <div class="row nav-bottom">
+        <div class="col-md-6 logo-title">
+            <a href="./index.html"><img src="./images/logo.jpg?v=1" width="100" height="100"></a>
+            <a href="./index.html"><h1 class="LogoFont">PetShops</h1></a>
+        </div>
+<!--        <div class="col-md-6 navbar-right">-->
+<!--            <ul class="nav navbar-nav">-->
+<!--                <li class="active"><a href="./index.html">Home</a></li>-->
+<!--                <li><a href="./index.html">Mine</a></li>-->
+<!--                <li><a href="./index.html">Message</a></li>-->
+<!--            </ul>-->
+<!--        </div>-->
+    </div>
+
+    <div class="row food-title">
+        <hr>
+        Login
+    </div>
+
+    <div class="row food" style="text-align: center;">
+        <div class="row">
+            <form class="form-horizontal" role="form">
+                <div class="form-group">
+                    <label for="firstname" class="col-sm-2 control-label">UserName</label>
+                    <div class="col-sm-9">
+                        <input type="text" v-model="name" class="form-control" id="firstname"
+                               placeholder="Please input your account">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="lastname"  class="col-sm-2 control-label">PassWord</label>
+                    <div class="col-sm-9">
+                        <input type="password" v-model="password" class="form-control" id="lastname" placeholder="Please input your password">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="col-sm-offset-2 col-sm-8">
+                        <button type="button" @click="submit" class="btn btn-default">Login</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    new Vue({
+        el: '#app',
+        data: {
+            name: '',
+            password: '',
+            user: {},
+            isLogin: false
+        },
+        mounted() {
+            this.init();
+            $('.carousel').carousel();
+        },
+        methods: {
+            init: function () {
+                let user = session("get.user");
+                if (user) {
+                    this.isLogin = true;
+                    this.user = JSON.parse(user);
+                } else {
+                    this.isLogin = false;
+                    //this.logout();
+                }
+            },
+            logout: function () {
+                window.sessionStorage.clear();
+                this.isLogin = false;
+                window.location.href = './login.html'
+            },
+            submit: function () {
+                Request.post(BASE_URL + '/api/login.php', {
+                    name: this.name,
+                    password: this.password
+                }, {emulateJSON: true}).then(function (res) {
+                    layer.alert(res.body.msg);
+                    if (res.body.code === 0) {
+                        session('post.user', JSON.stringify(res.body.data));
+                        setTimeout(function () {
+                            window.location.href = './index.html';
+                        }, 500)
+                    }
+                }, function (res) {
+                    console.log(res)
+                });
+            }
+        }
+    })
+</script>
+</body>
+</html>

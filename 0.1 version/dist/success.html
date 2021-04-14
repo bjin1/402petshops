@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>PetShops</title>
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <link href="css/style.css" rel="stylesheet">
+    <style>
+        #content {
+            border: 0px;
+            margin-top: 100px;
+        }
+
+        body {
+            background-color: rgba(243, 227, 210, 0.75);
+        }
+
+        .alert-link{
+            font-size: 22px;
+        }
+    </style>
+</head>
+<body>
+<div id="app">
+    <div id="all">
+        <div id="content">
+            <div class="container">
+                <div class="col-md-12" id="checkout" style="padding-bottom: 50px;">
+                    <div class="alert alert-success" style="margin-top: 5px;padding: 50px;">
+                        <center><a href="javascript:viod(0);" class="alert-link"><h1>Payment Success</h1></a></center>
+                        <br>
+                        <center><a href="index.html" class="alert-link">Back</a></center>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="./js/jquery.min.js"></script>
+<script src="./js/bootstrap.min.js"></script>
+<script src="./js/vue.min.js"></script>
+<script src="./js/vue-resource.min.js"></script>
+<script src="./js/config.js"></script>
+<script>
+    //new vue object
+    let vm = new Vue({
+        el: '#app',
+        data: {
+            user: {},
+            token: '',
+            isLogin: false,
+            order: {
+                order_id:'',
+                status:1,
+            }
+        },
+        mounted() {
+            this.init();
+            //this.updateOrder();
+        },
+        methods: {
+            init: function () {
+                //is login ?
+                let user = window.sessionStorage.getItem("user");
+                if (user) {
+                    this.isLogin = true;
+                    this.user = JSON.parse(user);
+                    this.token = window.sessionStorage.getItem('token');
+                } else {
+                    this.isLogin = false;
+                }
+            },
+            logout: function () {
+                //clear session
+                window.sessionStorage.clear();
+                this.isLogin = false;
+                window.location.href = './index.html';
+            },
+            updateOrder: function () {
+                let data = this.order;
+                data.token = this.user.token;
+                this.$http.post(BASE_URL + '/api/updateOrder?token=' + this.token, data, {emulateJSON: true}).then(function (res) {
+                    if (res.body.code === 0) {
+                        console.log(res.body);
+                    } else {
+                        alert(res.body.msg);
+                        console.log(res.body.msg);
+                    }
+                }, function (res) {
+                    //if request faild tips
+                    console.log("request error")
+                });
+            }
+        }
+    })
+</script>
+</body>
+</html>

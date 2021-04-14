@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>PetShops</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <link href="./css/bootstrap.min.css" rel="stylesheet">
+    <link href="./css/global.css" rel="stylesheet">
+    <script src="./js/jquery.min.js"></script>
+    <script src="./js/bootstrap.min.js"></script>
+    <script src="./js/layer.js"></script>
+    <script src="./js/vue.min.js"></script>
+    <script src="./js/vue-resource.min.js"></script>
+    <script src="./js/config.js"></script>
+    <style>
+        .cover-image {
+            margin-left: -10px;
+            width: 352px;
+            height: 243px;
+        }
+
+        .search-group {
+            width: 98%;
+            text-align: center;
+            margin-left: 1%;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+<div class="container" id="app">
+    <div class="row background-wall">
+        <div class="row header">
+            <div class="col-md-12 login-button">
+                <a href="./login.html" v-show="!isLogin">
+                    <button type="button" class="btn btn-success">Login</button>
+                </a>
+                <a href="./register.html" v-show="!isLogin">
+                    <button type="button" class="btn btn-success">Register</button>
+                </a>
+                <a v-show="isLogin" style="color:black;">Welcome,{{ user.name }}</a>
+                <a v-show="isLogin" @click="logout">Logout</a>
+            </div>
+        </div>
+        <div class="row nav-center"></div>
+    </div>
+
+    <div class="row nav-bottom">
+        <div class="col-md-6 logo-title">
+            <a href="./index.html"><img src="./images/logo.jpg?v=1" width="100" height="100"></a>
+            <a href="./index.html"><h1 class="LogoFont">PetShops</h1></a>
+        </div>
+        <div class="col-md-6 navbar-right">
+            <ul class="nav navbar-nav">
+                <li class="active"><a href="./index.html">Home</a></li>
+                <li><a href="./approve.html">Approve</a></li>
+                <li><a href="./mine.html">Mine</a></li>
+                <li><a @click="chatRoom">Message</a></li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="row search">
+        <hr>
+        <div class="input-group search-group">
+            <div class="col-lg-3">
+                <select v-model="breed" class="form-control">
+                    <option value="">Please choose breed</option>
+                    <option :value="''+item.breed" v-for="item in breedArray">{{ item.breed}}</option>
+                </select>
+            </div>
+            <div class="col-lg-6">
+                <input type="text" v-model="keyword" placeholder="Enter keyword search" class="form-control">
+            </div>
+            <div class="col-lg-3" style="padding-left:1px">
+                <button type="button" class="input-group btn btn-success" @click="searchByBreed">
+                    <i class="glyphicon glyphicon-search"></i> Search
+                </button>
+            </div>
+        </div>
+        <hr>
+    </div>
+
+    <div class="row shop" v-for="item in petList">
+        <div class="shop-title">
+            <a :href="'./shop.html?id='+item.id">
+                <h2>{{ item.title }}</h2>
+                <p class="title-desc">{{ item.oname }}</p>
+            </a>
+        </div>
+        <div class="shop-image-desc">
+            <div class="col-md-4">
+                <a :href="'./shop.html?id='+item.id">
+                    <img class="cover-image" :src="''+item.cover">
+                </a>
+            </div>
+            <div class="col-md-8">
+                <table class="table">
+                    <tbody>
+                    <tr class="success">
+                        <td>Breed</td>
+                        <td>{{ item.breed }}</td>
+                    </tr>
+                    <tr class="active">
+                        <td>Descr</td>
+                        <td>{{ item.descr.slice(0,110) }}...</td>
+                    </tr>
+                    <tr class="success">
+                        <td>Price</td>
+                        <td>${{ item.price }}</td>
+                    </tr>
+                    <tr class="active">
+                        <td>Views</td>
+                        <td>{{ item.views }}</td>
+                    </tr>
+                    <tr class="success">
+                        <td>Area</td>
+                        <td>{{ item.area }}</td>
+                    </tr>
+                    <tr class="active">
+                        <td>Delivery</td>
+                        <td>{{ item.delivery }}</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="row load">
+        <hr>
+        <button type="button" class="btn btn-success" @click="search">LOAD</button>
+        <hr>
+    </div>
+</div>
+
+<script>
+    new Vue({
+        el: '#app',
+        data: {
+            type: 1,
+            breed: '',
+            keyword: '',
+            breedArray: [],
+            page: 1,
+            size: 5,
+            petList: [],
+            user: {},
+            isLogin: false
+        },
+        mounted() {
+            $('.carousel').carousel();
+            this.init();
+            this.search();
+            this.breedList();
+        },
+        methods: {
+            init: function () {
+                let user = session("get.user");
+                if (user) {
+                    this.isLogin = true;
+                    this.user = JSON.parse(user);
+                } else {
+                    this.isLogin = false;
+                    this.logout();
+                }
+                this.type = get_url_param("pet");
+            },
+            logout: function () {
+                this.isLogin = false;
+                window.sessionStorage.clear();
+                window.location.href = './login.html'
+            },
+            search: function () {
+                let _this = this;
+                Request.get(BASE_URL + '/api/search.php', {
+                    params: {
+                        type: this.type,
+                        breed: this.breed,
+                        page: this.page,
+                        size: this.size,
+                        keyword: this.keyword
+                    }
+                }, {emulateJSON: true}).then(function (res) {
+                    // layer.alert(res.body.msg);
+                    if (res.body.code === 0) {
+                        _this.petList = _this.petList.concat(res.body.data);
+                        _this.page++;
+                    } else {
+                        layer.alert("No more data");
+                    }
+                }, function (res) {
+                    console.log(res)
+                });
+            },
+            searchByBreed: function () {
+                let _this = this;
+                _this.page = 1
+                Request.get(BASE_URL + '/api/search.php', {
+                    params: {
+                        type: this.type,
+                        breed: this.breed,
+                        page: this.page,
+                        size: this.size,
+                        keyword: this.keyword
+                    }
+                }, {emulateJSON: true}).then(function (res) {
+                    // layer.alert(res.body.msg);
+                    if (res.body.code === 0) {
+                        _this.petList = res.body.data;
+                        _this.page++;
+                    } else {
+                        layer.alert("No more data");
+                    }
+                }, function (res) {
+                    console.log(res)
+                });
+            },
+            breedList: function () {
+                let _this = this;
+                Request.get(BASE_URL + '/api/breed.php', {
+                    params: {}
+                }, {emulateJSON: true}).then(function (res) {
+                    // layer.alert(res.body.msg);
+                    if (res.body.code === 0) {
+                        _this.breedArray = res.body.data;
+                    }
+                }, function (res) {
+                    console.log(res)
+                });
+            },
+            chatRoom: function () {
+                layer.open({
+                    type: 2
+                    , title: 'Chat'
+                    , id: 'LAY_showPraise'
+                    , shade: 0.8
+                    , shadeClose: true
+                    , area: ['75%', "100%"]
+                    , skin: 'layer-ext-case'
+                    , maxmin: true
+                    , content: './chat.html?id=' + this.user.id
+                    , cancel: function (res) {
+                        console.log(res)
+                    }
+                })
+            }
+        }
+    })
+</script>
+</body>
+</html>

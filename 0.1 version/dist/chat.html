@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Chat</title>
+    <link rel="stylesheet" href="./css/chat.css">
+    <script src="./js/socket.io.js"></script>
+    <script src="./js/jquery.min.js"></script>
+    <script src="./js/layer.js"></script>
+    <script src="./js/vue.min.js"></script>
+    <script src="./js/vue-resource.min.js"></script>
+    <script src="./js/config.js"></script>
+</head>
+<body>
+<div class="main" id="app">
+    <div class="top">
+        <div class="top-left">
+            <div class="header">
+                <img id="header-image" src="./images/male-1.jpg" style="width:48px;height:48px;border-radius: 50%;">
+            </div>
+
+            <div class="nickname">
+                <p id="nickname">Nick</p>
+            </div>
+
+<!--            <div class="search">-->
+<!--                <input type="text" v-model="keyword" @keyup="search(this)">-->
+<!--                <i class="icon-sear"></i>-->
+<!--            </div>-->
+
+        </div>
+        <div class="top-type">
+            <a href="#" class="news icon-site"></a>
+            <a href="#" class="friend icon-site"></a>
+            <a href="#" class="file icon-site"></a>
+        </div>
+        <div class="top-right">
+            <i class="ic-menu ic-same"></i>
+            <i class="ic-shrink ic-same"></i>
+            <i class="ic-boost ic-same"></i>
+<!--            <i class="ic-close ic-same" id="create-group"></i>-->
+        </div>
+    </div>
+    <div class="box">
+        <div class="chat-list" id="group">
+
+        </div>
+        <div class="box-right">
+            <div class="recvfrom">
+                <div class="nav-top">
+                    <p id="group-title"></p>
+                </div>
+                <div class="news-top">
+                    <ul class="message">
+
+                    </ul>
+                </div>
+            </div>
+            <div class="sendto">
+                <p>&nbsp;</p>
+                <div class="but-text">
+                    <textarea name="" id="inputarea" cols="110" rows="6" style="resize: none;margin: 0 0 0 20px; width: 715px; height: 113px;"></textarea>
+                    <a href="#" class="button" @keyup.enter.native="send" @click="send">Send(enter)</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+    new Vue({
+        el: '#app',
+        data: {
+            id: '',
+            user: {},
+            data: {},
+            isLogin: false,
+            socket: '',
+            inputBox: '',
+            keyword: '',
+            receiver: '',
+            message:'',
+            div:'',
+        },
+        mounted() {
+            this.init();
+        },
+        methods: {
+            init: function () {
+                let _this = this;
+                let user = session("get.user");
+                // alert(user);
+                if (user) {
+                    this.isLogin = true;
+                    _this.user = JSON.parse(user);
+                } else {
+                    this.isLogin = false;
+                    //this.logout();
+                }
+                this.id = get_url_param("id");
+                let socket = this.socket = io.connect(BASE_URL+":3000");
+                let message = this.message = document.getElementsByClassName('message')[0];
+                let div = this.div = document.getElementsByClassName('news-top')[0];
+                this.inputBox = document.getElementById('inputarea');
+
+                socket.on('connect', (res) => {
+                    if (socket.connected) {
+                        $("#header-image").attr('src', _this.user.header);
+                        $("#nickname").html(_this.user.name);
+                        _this.createChatRoom();
+                    } else {
+                        layer.alert('connected error');
+                    }
+                });
+
+                //press enter send message
+                $(document).keyup(function(event){
+                    if(event.keyCode===13){
+                        _this.send();
+                        return false;
+                    }
+                });
+                //revice message from server
+                socket.on('message', function (res) {
+                    console.log(res);
+                    let user = JSON.parse(session("get.user"));
+                    let to = res.sender === user.name ? 'self' : 'other';
+                    let time = new Date(parseInt(res.time) * 1000).toLocaleString();
+                    console.log(time)
+                    $(".list-box[data-name='" + res.receiver + "']").empty().append('<img class="chat-head" src="' + res.header + '" alt="">\n' +
+                        '                <div class="chat-rig">\n' +
+                        '                    <p class="title">' + res.receiver + '</p>\n' +
+                        '                    <p class="text">' + res.sender + ': ' + res.message + '</p>\n' +
+                        '                </div>');
+
+                    if ($("#group-title").html() === res.receiver) {
+
+                        message.innerHTML += '<li class="' + to + '">\n' +
+                            '                            <div class="avatar"><img src="' + res.header + '" alt=""></div>\n' +
+                            '                            <div class="msg">\n' +
+                            '                                <p class="msg-name" ' + (to === 'self' ? 'style="text-align:right;"' : '') + '>' + res.sender + '</p>\n' +
+                            '                                <p class="msg-text">' + res.message + '\n' +
+                            '                                    <emoji class="pizza"></emoji>\n' +
+                            '                                </p>\n' +
+                            '                                <time>' + time + '</time>\n' +
+                            '                            </div>\n' +
+                            '                        </li>';
+                        div.scrollTop = div.scrollHeight;
+                    }
+                });
+
+                socket.on('join', function (result) {
+                    // alert(res.user+" join "+res.room);
+                    if (!$(".message").find('li').length) {
+                        $.post(BASE_URL+'/api/history.php', {'name': result.room}, function (res) {
+                            // console.log(res);
+                            let html = '';
+                            let user = JSON.parse(session("get.user"));
+
+                            $.each(res.data, function (k, v) {
+                                console.log(v)
+                                let to = v.sender === user.name ? 'self' : 'other';
+                                let time = new Date(parseInt(v.time) * 1000).toLocaleString();
+
+                                html += '<li class="' + to + '">\n' +
+                                    '                            <div class="avatar"><img src="' + v.header + '" alt=""></div>\n' +
+                                    '                            <div class="msg">\n' +
+                                    '                                <p class="msg-name" ' + (to === 'self' ? 'style="text-align:right;"' : '') + '>' + v.sender + '</p>\n' +
+                                    '                                <p class="msg-text">' + v.message + '\n' +
+                                    '                                    <emoji class="pizza"></emoji>\n' +
+                                    '                                </p>\n' +
+                                    '                                <time>' + time + '</time>\n' +
+                                    '                            </div>\n' +
+                                    '                  </li>';
+                            });
+                            message.innerHTML = html;
+                        });
+                    }
+
+                    div.scrollTop = div.scrollHeight;
+                });
+
+                $("#group").on('click', '.list-box', function () {
+                    if ($(this).attr('data-name') === $("#group-title").html()) return false;
+
+                    $(".list-box").each(function () {
+                        if ($(this).hasClass('select')) {
+                            $(this).removeClass('select');
+                        }
+                    });
+
+                    $(this).addClass('select');
+
+                    $("#group-title").html($(this).attr('data-name'));
+
+                    $(".message").html('');
+
+                    let user = JSON.parse(window.sessionStorage.getItem('user'));
+
+                    socket.emit('join', {
+                        user: user.name,
+                        room: $("#group-title").html()
+                    });
+                });
+            },
+            createChatRoom: function(){
+                let _this = this;
+                let id = get_url_param("id")
+                Request.post(BASE_URL + '/api/user.php', {id: id}, {emulateJSON: true}).then(function (res) {
+                    _this.receiver = res.body.data;
+
+                    let room = [_this.user.name,_this.receiver.name].sort().join("、");
+
+                    _this.socket.emit('join', {
+                        user: _this.user.name,
+                        room: room
+                    });
+
+                    $.get(BASE_URL + '/api/room.php', {'name': _this.user.name}, function (res) {
+                        let html = '';
+                        $.each(res.data, function (k, v) {
+                            let select = (v.receiver === room ? ' select' : '');
+                            html += '<div data-name="' + v.receiver + '" class="list-box' + select + '">\n' +
+                                '                <img class="chat-head" src="' + v.header + '" alt="">\n' +
+                                '                <div class="chat-rig">\n' +
+                                '                    <p class="title">' + v.receiver + '</p>\n' +
+                                '                    <p class="text">' + v.sender + ': ' + v.message + '</p>\n' +
+                                '                </div>\n' +
+                                '               </div>'
+                        });
+                        $("#group").html(html);
+
+                        $("#group-title").html(room);
+
+                        $.post(BASE_URL + '/api/history.php', {'name': room}, function (res) {
+                            // console.log(res.data)
+                            if(!res.data.length){
+                                _this.socket.emit('message', {
+                                    id: 1,
+                                    sender: _this.user.name,
+                                    header: _this.user.header,
+                                    receiver: room,
+                                    message: 'Create successfully, start chat',
+                                    time: Date.parse(new Date()) / 1000
+                                });
+                                setTimeout(function () {
+                                    _this.search();
+                                },100)
+                            }
+
+                            // console.log(res);
+
+                            let html = '';
+                            $.each(res.data, function (k, v) {
+                                let user = JSON.parse(session("get.user"));
+                                let to = v.sender === user.name ? 'self' : 'other';
+                                let time = new Date(parseInt(v.time) * 1000).toLocaleString();
+
+                                html += '<li class="' + to + '">\n' +
+                                    '                            <div class="avatar"><img src="' + v.header + '" alt=""></div>\n' +
+                                    '                            <div class="msg">\n' +
+                                    '                                <p class="msg-name" ' + (to === 'self' ? 'style="text-align:right;"' : '') + '>' + v.sender + '</p>\n' +
+                                    '                                <p class="msg-text">' + v.message + '\n' +
+                                    '                                    <emoji class="pizza"></emoji>\n' +
+                                    '                                </p>\n' +
+                                    '                                <time>' + time + '</time>\n' +
+                                    '                            </div>\n' +
+                                    '                  </li>';
+                            });
+                            _this.message.innerHTML = html;
+                            _this.div.scrollTop = _this.div.scrollHeight;
+                        });
+                    })
+                }, function (res) {
+                    console.log(res)
+                });
+            },
+            send: function () {
+                let _this = this;
+                //send message to server
+                let user = JSON.parse(session("get.user"));
+
+                this.socket.emit('message', {
+                    sender: user.name,
+                    header: user.header,
+                    receiver: $("#group-title").html(),
+                    message: _this.inputBox.value,
+                    time: Date.parse(new Date()) / 1000
+                });
+                this.inputBox.value = '';
+            },
+            search: function () {
+                let _this = this;
+                Request.get(BASE_URL + '/api/room.php', {
+                    params: {
+                        name: _this.user.name,
+                    }
+                }, {emulateJSON: true}).then(function (res) {
+                    // layer.alert(res.body.msg);
+                    if (res.body.data.length === 0) {
+                        $("#group").empty().html('<center>no results</center>');
+                        return false;
+                    }
+                    let html = '';
+                    $.each(res.body.data, function (k, v) {
+                        html += '<div data-name="' + v.receiver + '" class="list-box">\n' +
+                            '                <img class="chat-head" src="' + v.header + '" alt="">\n' +
+                            '                <div class="chat-rig">\n' +
+                            '                    <p class="title">' + v.receiver + '</p>\n' +
+                            '                    <p class="text">' + v.sender + ': ' + v.message + '</p>\n' +
+                            '                </div>\n' +
+                            '               </div>'
+                    });
+                    // console.log(html)
+                    $("#group").html(html);
+                }, function (res) {
+                    // console.log(res)
+                });
+            },
+            logout: function () {
+                this.isLogin = false;
+                window.sessionStorage.clear();
+                redirect('login')
+            }
+        }
+    })
+</script>
+</body>
+</html>
